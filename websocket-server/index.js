@@ -13,6 +13,7 @@ const io = new Server(server, {
 const PORT = 3001;
 
 let games = {};
+let playerColors = {};
 
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
@@ -25,14 +26,31 @@ io.on('connection', (socket) => {
             games[gameId] = [];
         }
 
-        games[gameId].push(socket.id);
+        if(!games[gameId].includes(socket.id)){
+            games[gameId].push(socket.id);
+        }
 
-        if(games[gameId].lenght === 2) {
-            io.to(gameId).emit('startGame', { white: games[gameId][0], black: games[gameId][1] });
+        
+        if(games[gameId].length === 2) {
+            const [whitePlayer, blackPlayer] = games[gameId];
+
+            playerColors[whitePlayer] = 'white';
+            playerColors[blackPlayer] = 'black';
+
+            io.to(whitePlayer).emit('assignColor', { color: 'white' });
+            io.to(blackPlayer).emit('assignColor', { color: 'black' });
+            io.to(gameId).emit('start game');
+            console.log(whitePlayer, blackPlayer);
         }
     });
 
-    socket.on('move', ({gameId, move}) => {
+    socket.on('move', ({gameId, move, color }) => {
+        const expectedColor = playerColors[socket.id];
+        if (expectedColor !== color) {
+            console.log(`Invalid move from ${socket.id}: expected ${expectedColor}, got ${color}`);
+            return;
+        }
+        
         socket.to(gameId).emit('opponentMove', move);
     });
 });
