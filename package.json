@@ -14,5 +14,8 @@
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4"
   }
 }
