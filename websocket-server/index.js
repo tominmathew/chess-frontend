@@ -1,6 +1,8 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const { sendMoveToKafka } = require('./kafkaProducer');
+const { timeStamp } = require('console');
 
 const app = express();
 const server = http.createServer(app);
@@ -44,7 +46,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('move', ({gameId, move, color }) => {
+    socket.on('move',async ({gameId, move, color }) => {
         const expectedColor = playerColors[socket.id];
         if (expectedColor !== color) {
             console.log(`Invalid move from ${socket.id}: expected ${expectedColor}, got ${color}`);
@@ -52,6 +54,12 @@ io.on('connection', (socket) => {
         }
         
         socket.to(gameId).emit('opponentMove', move);
+
+        try {
+            await sendMoveToKafka({ gameId, move, color, timeStamp: Date.now() });
+        } catch (err) {
+            console.error('Error sending moves to kafka', err);
+        }
     });
 });
 
